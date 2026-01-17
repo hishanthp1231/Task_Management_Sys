@@ -36,6 +36,11 @@ app.get('/', (req, res) => {
     });
 });
 
+// Diagnostic route
+app.get('/api/test', (req, res) => {
+    res.json({ success: true, message: 'API routing is working' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/users', userRoutes);
