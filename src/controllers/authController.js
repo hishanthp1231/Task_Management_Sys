@@ -1,14 +1,10 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
 const register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -17,7 +13,6 @@ const register = async (req, res) => {
             });
         }
 
-        // Create user
         const user = await User.create({
             name,
             email,
@@ -25,7 +20,6 @@ const register = async (req, res) => {
             role: role || 'user'
         });
 
-        // Generate JWT token
         const token = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET,
@@ -50,14 +44,10 @@ const register = async (req, res) => {
     }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
 const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        // Validate input
         if (!email || !password) {
             return res.status(400).json({
                 success: false,
@@ -65,7 +55,6 @@ const login = async (req, res) => {
             });
         }
 
-        // Find user (need to include password for comparison)
         const user = await User.findOne({ email }).select('+password');
         if (!user) {
             return res.status(401).json({
@@ -74,7 +63,6 @@ const login = async (req, res) => {
             });
         }
 
-        // Check password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({
@@ -83,7 +71,6 @@ const login = async (req, res) => {
             });
         }
 
-        // Generate JWT token
         const token = jwt.sign(
             { id: user.id, role: user.role },
             process.env.JWT_SECRET,
@@ -108,12 +95,8 @@ const login = async (req, res) => {
     }
 };
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
 const getMe = async (req, res) => {
     try {
-        // req.user.id comes from middleware which likely decoded the token
         const user = await User.findById(req.user.id);
 
         res.status(200).json({

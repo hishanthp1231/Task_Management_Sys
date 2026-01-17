@@ -1,8 +1,5 @@
 const { Task, User } = require('../models');
 
-// @desc    Get all tasks with pagination and filtering
-// @route   GET /api/tasks
-// @access  Private
 const getTasks = async (req, res) => {
     try {
         let { page = 1, limit = 10, status, search } = req.query;
@@ -10,10 +7,8 @@ const getTasks = async (req, res) => {
         limit = parseInt(limit);
         const skip = (page - 1) * limit;
 
-        // Build filter conditions
         const query = {};
 
-        // If user is not admin, only show tasks they created or assigned to them
         if (req.user.role !== 'admin') {
             query.$or = [
                 { created_by_id: req.user.id },
@@ -21,12 +16,10 @@ const getTasks = async (req, res) => {
             ];
         }
 
-        // Filter by status
         if (status) {
             query.status = status;
         }
 
-        // Search in title and description
         if (search) {
             const searchRegex = new RegExp(search, 'i');
             const searchCondition = {
@@ -36,7 +29,6 @@ const getTasks = async (req, res) => {
                 ]
             };
 
-            // Combine with existing $or if present (for non-admins)
             if (query.$or) {
                 query.$and = [
                     { $or: query.$or },
@@ -78,9 +70,6 @@ const getTasks = async (req, res) => {
     }
 };
 
-// @desc    Get single task by ID
-// @route   GET /api/tasks/:id
-// @access  Private
 const getTask = async (req, res) => {
     try {
         const task = await Task.findById(req.params.id)
@@ -94,7 +83,6 @@ const getTask = async (req, res) => {
             });
         }
 
-        // Check authorization
         if (req.user.role !== 'admin' &&
             task.created_by_id.toString() !== req.user.id &&
             (task.assigned_to_id && task.assigned_to_id.toString() !== req.user.id)) {
@@ -118,14 +106,10 @@ const getTask = async (req, res) => {
     }
 };
 
-// @desc    Create new task
-// @route   POST /api/tasks
-// @access  Private
 const createTask = async (req, res) => {
     try {
         const { title, description, status, assigned_to_id } = req.body;
 
-        // Validate assigned user exists if provided
         if (assigned_to_id) {
             const assignedUser = await User.findById(assigned_to_id);
             if (!assignedUser) {
@@ -144,7 +128,6 @@ const createTask = async (req, res) => {
             created_by_id: req.user.id
         });
 
-        // Fetch the task with associations
         const createdTask = await Task.findById(task.id)
             .populate('creator', 'name email')
             .populate('assignee', 'name email');
@@ -164,9 +147,6 @@ const createTask = async (req, res) => {
     }
 };
 
-// @desc    Update task
-// @route   PUT /api/tasks/:id
-// @access  Private
 const updateTask = async (req, res) => {
     try {
         let task = await Task.findById(req.params.id);
@@ -178,7 +158,6 @@ const updateTask = async (req, res) => {
             });
         }
 
-        // Check authorization - only creator or admin can update
         if (req.user.role !== 'admin' && task.created_by_id.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,
@@ -188,7 +167,6 @@ const updateTask = async (req, res) => {
 
         const { title, description, status, assigned_to_id } = req.body;
 
-        // Validate assigned user exists if provided
         if (assigned_to_id) {
             const assignedUser = await User.findById(assigned_to_id);
             if (!assignedUser) {
@@ -199,7 +177,6 @@ const updateTask = async (req, res) => {
             }
         }
 
-        // Update task
         task.title = title !== undefined ? title : task.title;
         task.description = description !== undefined ? description : task.description;
         task.status = status !== undefined ? status : task.status;
@@ -207,7 +184,6 @@ const updateTask = async (req, res) => {
 
         await task.save();
 
-        // Fetch updated task with associations
         const updatedTask = await Task.findById(task.id)
             .populate('creator', 'name email')
             .populate('assignee', 'name email');
@@ -227,9 +203,6 @@ const updateTask = async (req, res) => {
     }
 };
 
-// @desc    Delete task
-// @route   DELETE /api/tasks/:id
-// @access  Private
 const deleteTask = async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
@@ -241,7 +214,6 @@ const deleteTask = async (req, res) => {
             });
         }
 
-        // Check authorization - only creator or admin can delete
         if (req.user.role !== 'admin' && task.created_by_id.toString() !== req.user.id) {
             return res.status(403).json({
                 success: false,

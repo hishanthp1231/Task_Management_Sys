@@ -5,13 +5,9 @@ const { authorize } = require('../middlewares/rbac');
 
 const router = express.Router();
 
-// All routes require authentication and admin role
 router.use(protect);
 router.use(authorize('admin'));
 
-// @desc    Get all users
-// @route   GET /api/users
-// @access  Private/Admin
 router.get('/', async (req, res) => {
     try {
         const users = await User.find({})
@@ -33,9 +29,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// @desc    Get single user
-// @route   GET /api/users/:id
-// @access  Private/Admin
 router.get('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id)

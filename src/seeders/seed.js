@@ -6,16 +6,13 @@ const seedData = async () => {
     try {
         console.log('Starting database seeding...');
 
-        // Connect to database
         await connectDB();
 
-        // Clear existing data
         await Task.deleteMany({});
         await User.deleteMany({});
         await Counter.deleteMany({});
         console.log('Database cleared');
 
-        // Create admin user
         const admin = await User.create({
             name: 'Admin User',
             email: 'admin@taskmanager.com',
@@ -24,30 +21,28 @@ const seedData = async () => {
         });
         console.log('Admin user created');
 
-        // Create regular users
         const users = await User.create([
             {
-                name: 'John Doe',
-                email: 'john@example.com',
+                name: 'User1',
+                email: 'user1@example.com',
                 password: 'password123',
                 role: 'user'
             },
             {
-                name: 'Jane Smith',
-                email: 'jane@example.com',
+                name: 'User2',
+                email: 'user2@example.com',
                 password: 'password123',
                 role: 'user'
             },
             {
-                name: 'Bob Johnson',
-                email: 'bob@example.com',
+                name: 'User3',
+                email: 'user3@example.com',
                 password: 'password123',
                 role: 'user'
             }
         ]);
         console.log('Regular users created');
 
-        // Create tasks
         await Task.create([
             {
                 title: 'Setup development environment',
@@ -111,9 +106,9 @@ const seedData = async () => {
         console.log('\nSeeding completed successfully!\n');
         console.log('Login credentials:');
         console.log('Admin: admin@taskmanager.com / admin123');
-        console.log('User1: john@example.com / password123');
-        console.log('User2: jane@example.com / password123');
-        console.log('User3: bob@example.com / password123\n');
+        console.log('User1: user1@example.com / password123');
+        console.log('User2: user2@example.com / password123');
+        console.log('User3: user3@example.com / password123\n');
 
         process.exit(0);
     } catch (error) {

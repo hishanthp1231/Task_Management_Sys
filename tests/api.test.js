@@ -6,9 +6,7 @@ const { User, Task } = require('../src/models');
 
 let mongoServer;
 
-// Setup and teardown
 beforeAll(async () => {
-    // If mongoose is already connected, disconnect it first
     if (mongoose.connection.readyState !== 0) {
         await mongoose.disconnect();
     }
@@ -23,7 +21,6 @@ afterAll(async () => {
     await mongoServer.stop();
 });
 
-// Clear database between tests
 afterEach(async () => {
     const collections = mongoose.connection.collections;
     for (const key in collections) {
@@ -51,7 +48,6 @@ describe('Authentication API', () => {
     });
 
     test('POST /api/auth/register - Fail with existing email', async () => {
-        // First register a user
         await User.create({
             name: 'Existing User',
             email: 'test@example.com',
@@ -71,7 +67,6 @@ describe('Authentication API', () => {
     });
 
     test('POST /api/auth/login - Login successfully', async () => {
-        // Register user first (handled by afterEach clearing, so we need to re-register)
         await request(app)
             .post('/api/auth/register')
             .send({
@@ -137,7 +132,6 @@ describe('Tasks API', () => {
     let taskId;
 
     beforeEach(async () => {
-        // Create user and login
         await request(app)
             .post('/api/auth/register')
             .send({
@@ -183,7 +177,6 @@ describe('Tasks API', () => {
     });
 
     test('GET /api/tasks/:id - Get single task', async () => {
-        // Create a task first
         const createRes = await request(app)
             .post('/api/tasks')
             .set('Authorization', `Bearer ${authToken}`)
@@ -204,7 +197,6 @@ describe('Tasks API', () => {
     });
 
     test('PUT /api/tasks/:id - Update task', async () => {
-        // Create a task first
         const createRes = await request(app)
             .post('/api/tasks')
             .set('Authorization', `Bearer ${authToken}`)
@@ -230,7 +222,6 @@ describe('Tasks API', () => {
     });
 
     test('DELETE /api/tasks/:id - Delete task', async () => {
-        // Create a task first
         const createRes = await request(app)
             .post('/api/tasks')
             .set('Authorization', `Bearer ${authToken}`)

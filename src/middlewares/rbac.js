@@ -1,6 +1,3 @@
-// Role-Based Access Control Middleware
-
-// Authorize specific roles
 const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {

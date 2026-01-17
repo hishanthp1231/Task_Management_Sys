@@ -44,14 +44,12 @@ const taskSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-// Auto-increment ID
 taskSchema.pre('save', async function () {
     if (this.isNew) {
         this._id = await getNextSequence('tasks');
     }
 });
 
-// Reverse populate with virtuals
 taskSchema.virtual('assignee', {
     ref: 'User',
     localField: 'assigned_to_id',

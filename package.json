@@ -1,7 +1,7 @@
 {
   "name": "backend_task_management",
   "version": "1.0.0",
-  "description": "Task Management API with JWT authentication and PostgreSQL",
+  "description": "Task Management API with JWT authentication and MongoDB",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -10,7 +10,6 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "jest --coverage",
-    "migrate": "sequelize-cli db:migrate",
     "seed": "node src/seeders/seed.js"
   },
   "keywords": [],
