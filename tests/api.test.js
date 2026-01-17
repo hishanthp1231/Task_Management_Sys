@@ -1,15 +1,34 @@
 const request = require('supertest');
+const mongoose = require('mongoose');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 const app = require('../src/index');
-const { sequelize } = require('../src/config/db');
 const { User, Task } = require('../src/models');
+
+let mongoServer;
 
 // Setup and teardown
 beforeAll(async () => {
-    await sequelize.sync({ force: true });
+    // If mongoose is already connected, disconnect it first
+    if (mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect();
+    }
+
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
 });
 
 afterAll(async () => {
-    await sequelize.close();
+    await mongoose.disconnect();
+    await mongoServer.stop();
+});
+
+// Clear database between tests
+afterEach(async () => {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+        await collections[key].deleteMany();
+    }
 });
 
 describe('Authentication API', () => {
@@ -32,6 +51,13 @@ describe('Authentication API', () => {
     });
 
     test('POST /api/auth/register - Fail with existing email', async () => {
+        // First register a user
+        await User.create({
+            name: 'Existing User',
+            email: 'test@example.com',
+            password: 'password123'
+        });
+
         const res = await request(app)
             .post('/api/auth/register')
             .send({
@@ -45,6 +71,15 @@ describe('Authentication API', () => {
     });
 
     test('POST /api/auth/login - Login successfully', async () => {
+        // Register user first (handled by afterEach clearing, so we need to re-register)
+        await request(app)
+            .post('/api/auth/register')
+            .send({
+                name: 'Test User',
+                email: 'test@example.com',
+                password: 'password123'
+            });
+
         const res = await request(app)
             .post('/api/auth/login')
             .send({
@@ -59,6 +94,12 @@ describe('Authentication API', () => {
     });
 
     test('POST /api/auth/login - Fail with wrong password', async () => {
+        await User.create({
+            name: 'Test User',
+            email: 'test@example.com',
+            password: 'password123'
+        });
+
         const res = await request(app)
             .post('/api/auth/login')
             .send({
@@ -71,9 +112,19 @@ describe('Authentication API', () => {
     });
 
     test('GET /api/auth/me - Get current user', async () => {
+        const registerRes = await request(app)
+            .post('/api/auth/register')
+            .send({
+                name: 'Test User',
+                email: 'test@example.com',
+                password: 'password123'
+            });
+
+        const token = registerRes.body.data.token;
+
         const res = await request(app)
             .get('/api/auth/me')
-            .set('Authorization', `Bearer ${userToken}`);
+            .set('Authorization', `Bearer ${token}`);
 
         expect(res.statusCode).toBe(200);
         expect(res.body.success).toBe(true);
@@ -85,7 +136,7 @@ describe('Tasks API', () => {
     let authToken;
     let taskId;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
         // Create user and login
         await request(app)
             .post('/api/auth/register')
@@ -132,18 +183,40 @@ describe('Tasks API', () => {
     });
 
     test('GET /api/tasks/:id - Get single task', async () => {
+        // Create a task first
+        const createRes = await request(app)
+            .post('/api/tasks')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                title: 'Test Task',
+                description: 'This is a test task',
+                status: 'pending'
+            });
+        const newTaskId = createRes.body.data.id;
+
         const res = await request(app)
-            .get(`/api/tasks/${taskId}`)
+            .get(`/api/tasks/${newTaskId}`)
             .set('Authorization', `Bearer ${authToken}`);
 
         expect(res.statusCode).toBe(200);
         expect(res.body.success).toBe(true);
-        expect(res.body.data.id).toBe(taskId);
+        expect(res.body.data.id).toBe(newTaskId);
     });
 
     test('PUT /api/tasks/:id - Update task', async () => {
+        // Create a task first
+        const createRes = await request(app)
+            .post('/api/tasks')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                title: 'Test Task',
+                description: 'This is a test task',
+                status: 'pending'
+            });
+        const newTaskId = createRes.body.data.id;
+
         const res = await request(app)
-            .put(`/api/tasks/${taskId}`)
+            .put(`/api/tasks/${newTaskId}`)
             .set('Authorization', `Bearer ${authToken}`)
             .send({
                 title: 'Updated Task',
@@ -157,8 +230,19 @@ describe('Tasks API', () => {
     });
 
     test('DELETE /api/tasks/:id - Delete task', async () => {
+        // Create a task first
+        const createRes = await request(app)
+            .post('/api/tasks')
+            .set('Authorization', `Bearer ${authToken}`)
+            .send({
+                title: 'Test Task',
+                description: 'This is a test task',
+                status: 'pending'
+            });
+        const newTaskId = createRes.body.data.id;
+
         const res = await request(app)
-            .delete(`/api/tasks/${taskId}`)
+            .delete(`/api/tasks/${newTaskId}`)
             .set('Authorization', `Bearer ${authToken}`);
 
         expect(res.statusCode).toBe(200);
